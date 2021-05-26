@@ -89,13 +89,14 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t buf[2]={0,1};
-  uint16_t temperature, humidity;
+  uint8_t buf[3]={0,0,0};
+  uint16_t temperature;
   uint8_t temperature_low;
   const uint8_t TMP102_ADDR = 0x95 ;
   HAL_StatusTypeDef ret;
-  float temp, humm_x0, humm_x1, humm_y0, humm_y1;
+  float temp, value_x0, value_x1, value_y0, value_y1, humm, pressure;
   uint32_t err;
+  int16_t val;
 
   //HAL_I2C_IsDeviceReady(hi2c, DevAddress, Trials, Timeout)
   //hi2c1->Instance->CR1;
@@ -120,17 +121,39 @@ int main(void)
 	temp = ((float)temperature) / 256.0f;
 
 	// humidity
-	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0xB6, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
-	humm_x0 = ((buf[1] * 256) + buf[0]) * 1.0f;
+	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x36 | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
+	value_x0 = (int16_t)((buf[1] * 256) + buf[0]) * 1.0f;
 
-	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0xB0, I2C_MEMADD_SIZE_8BIT, buf, 1, 3000);
-	humm_y0 = buf[0] / 2.0f;
+	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x30 | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 1, 3000);
+	value_y0 = buf[0] / 2.0f;
 
-	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x3A, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
-	humm_x1 = ((buf[1] * 256) + buf[0]) * 1.0f;
+	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x3A | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
+	value_x1 = (int16_t)((buf[1] * 256) + buf[0]) * 1.0f;
 
-	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x31, I2C_MEMADD_SIZE_8BIT, buf, 1, 3000);
-	humm_y1 = buf[0] / 2.0f;
+	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x31 | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 1, 3000);
+	value_y1 = buf[0] / 2.0f;
+
+	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x28 | 0x80, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
+	val = (int16_t)buf[1];
+	val = (val * 256) +  (int16_t)buf[0];
+	// interpolation
+	humm = (((value_y1 - value_y0) * val) + ((value_x1 * value_y0) - (value_x0 * value_y1))) / (value_x1 - value_x0);
+
+	if (humm < 0.0f)
+		humm = 0.0f;
+	if (humm > 100.0f)
+		humm = 100.0f;
+
+	// presure
+	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBB, 0x28, I2C_MEMADD_SIZE_8BIT, buf, 3, 3000);
+
+	uint32_t buff = buf[2];
+	buff = (buff * 256) + buf[1];
+	buff = (buff * 256) + buf[0];
+	buff *= 256;
+	pressure =  (float) buff / 1048576.0f ;
+
+
 
 
 
