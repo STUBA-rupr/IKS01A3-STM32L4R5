@@ -90,19 +90,24 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   uint8_t buf[2]={0,1};
-  uint16_t temperature;
+  uint16_t temperature, humidity;
   uint8_t temperature_low;
   const uint8_t TMP102_ADDR = 0x95 ;
   HAL_StatusTypeDef ret;
-  float temp;
+  float temp, humm_x0, humm_x1, humm_y0, humm_y1;
+  uint32_t err;
 
   //HAL_I2C_IsDeviceReady(hi2c, DevAddress, Trials, Timeout)
   //hi2c1->Instance->CR1;
 
   ret = HAL_I2C_GetState(&hi2c1);
 
-  ret = HAL_I2C_IsDeviceReady(&hi2c1, TMP102_ADDR, 3, 3000);
+  if(HAL_I2C_IsDeviceReady(&hi2c1, TMP102_ADDR, 3, 3000)!=HAL_OK)
+  {
+	  err = HAL_I2C_GetError(&hi2c1);
+  }
 
+	// temperature
 	buf[0] = 0x0; // hi bit
 	ret = HAL_I2C_Master_Transmit(&hi2c1, TMP102_ADDR, buf, 1, 3000);
 	ret = HAL_I2C_Master_Receive(&hi2c1, TMP102_ADDR, (uint8_t*)&temperature, 1, 3000);
@@ -113,6 +118,19 @@ int main(void)
 
 	temperature  = (temperature << 8) + temperature_low;
 	temp = ((float)temperature) / 256.0f;
+
+	// humidity
+	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0xB6, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
+	humm_x0 = ((buf[1] * 256) + buf[0]) * 1.0f;
+
+	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0xB0, I2C_MEMADD_SIZE_8BIT, buf, 1, 3000);
+	humm_y0 = buf[0] / 2.0f;
+
+	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x3A, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
+	humm_x1 = ((buf[1] * 256) + buf[0]) * 1.0f;
+
+	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x31, I2C_MEMADD_SIZE_8BIT, buf, 1, 3000);
+	humm_y1 = buf[0] / 2.0f;
 
 
 
