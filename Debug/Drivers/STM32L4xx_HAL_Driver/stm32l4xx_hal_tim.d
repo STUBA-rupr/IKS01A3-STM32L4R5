@@ -26,7 +26,9 @@ Drivers/STM32L4xx_HAL_Driver/stm32l4xx_hal_tim.o: \
  C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_i2c.h \
  C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_i2c_ex.h \
  C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr.h \
- C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h
+ C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h \
+ C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim.h \
+ C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h
 
 C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h:
 
@@ -81,3 +83,7 @@ C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_H
 C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr.h:
 
 C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h:
+
+C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim.h:
+
+C:/Users/Rudolf/STM32Cube/Repository/STM32Cube_FW_L4_V1.15.1/Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_tim_ex.h:

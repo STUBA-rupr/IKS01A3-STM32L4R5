@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -42,7 +43,9 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 
+osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
+float temp, humm, pressure;
 
 /* USER CODE END PV */
 
@@ -50,6 +53,8 @@ I2C_HandleTypeDef hi2c1;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
+void StartDefaultTask(void const * argument);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -89,69 +94,20 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t buf[3]={0,0,0};
-  uint16_t temperature;
-  uint8_t temperature_low;
-  const uint8_t TMP102_ADDR = 0x95 ;
-  HAL_StatusTypeDef ret;
-  float temp, value_x0, value_x1, value_y0, value_y1, humm, pressure;
   uint32_t err;
-  int16_t val;
+  HAL_StatusTypeDef ret;
 
   //HAL_I2C_IsDeviceReady(hi2c, DevAddress, Trials, Timeout)
   //hi2c1->Instance->CR1;
 
   ret = HAL_I2C_GetState(&hi2c1);
 
-  if(HAL_I2C_IsDeviceReady(&hi2c1, TMP102_ADDR, 3, 3000)!=HAL_OK)
+  if(HAL_I2C_IsDeviceReady(&hi2c1, 0x95, 3, 3000)!=HAL_OK)
   {
 	  err = HAL_I2C_GetError(&hi2c1);
   }
 
-	// temperature
-	buf[0] = 0x0; // hi bit
-	ret = HAL_I2C_Master_Transmit(&hi2c1, TMP102_ADDR, buf, 1, 3000);
-	ret = HAL_I2C_Master_Receive(&hi2c1, TMP102_ADDR, (uint8_t*)&temperature, 1, 3000);
 
-	buf[0] = 0x2; // lo bit
-	ret = HAL_I2C_Master_Transmit(&hi2c1, TMP102_ADDR, buf, 1, 3000);
-	ret = HAL_I2C_Master_Receive(&hi2c1, TMP102_ADDR, &temperature_low, 1, 3000);
-
-	temperature  = (temperature << 8) + temperature_low;
-	temp = ((float)temperature) / 256.0f;
-
-	// humidity
-	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x36 | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
-	value_x0 = (int16_t)((buf[1] * 256) + buf[0]) * 1.0f;
-
-	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x30 | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 1, 3000);
-	value_y0 = buf[0] / 2.0f;
-
-	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x3A | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
-	value_x1 = (int16_t)((buf[1] * 256) + buf[0]) * 1.0f;
-
-	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x31 | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 1, 3000);
-	value_y1 = buf[0] / 2.0f;
-
-	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x28 | 0x80, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
-	val = (int16_t)buf[1];
-	val = (val * 256) +  (int16_t)buf[0];
-	// interpolation
-	humm = (((value_y1 - value_y0) * val) + ((value_x1 * value_y0) - (value_x0 * value_y1))) / (value_x1 - value_x0);
-
-	if (humm < 0.0f)
-		humm = 0.0f;
-	if (humm > 100.0f)
-		humm = 100.0f;
-
-	// presure
-	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBB, 0x28, I2C_MEMADD_SIZE_8BIT, buf, 3, 3000);
-
-	uint32_t buff = buf[2];
-	buff = (buff * 256) + buf[1];
-	buff = (buff * 256) + buf[0];
-	buff *= 256;
-	pressure =  (float) buff / 1048576.0f ;
 
 
 
@@ -161,6 +117,35 @@ int main(void)
 
   /* USER CODE END 2 */
 
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* definition and creation of defaultTask */
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 1000);
+  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -290,6 +275,99 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void const * argument)
+{
+	HAL_StatusTypeDef ret;
+	float value_x0, value_x1, value_y0, value_y1;
+	uint32_t err;
+	int16_t val;
+	uint8_t buf[3]={0,0,0};
+	uint16_t temperature;
+	uint8_t temperature_low;
+	const uint8_t TMP102_ADDR = 0x95 ;
+
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
+	  // temperature
+	  	buf[0] = 0x0; // hi bit
+	  	ret = HAL_I2C_Master_Transmit(&hi2c1, TMP102_ADDR, buf, 1, 3000);
+	  	ret = HAL_I2C_Master_Receive(&hi2c1, TMP102_ADDR, (uint8_t*)&temperature, 1, 3000);
+
+	  	buf[0] = 0x2; // lo bit
+	  	ret = HAL_I2C_Master_Transmit(&hi2c1, TMP102_ADDR, buf, 1, 3000);
+	  	ret = HAL_I2C_Master_Receive(&hi2c1, TMP102_ADDR, &temperature_low, 1, 3000);
+
+	  	temperature  = (temperature << 8) + temperature_low;
+	  	temp = ((float)temperature) / 256.0f;
+
+	  	// humidity
+	  	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x36 | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
+	  	value_x0 = (int16_t)((buf[1] * 256) + buf[0]) * 1.0f;
+
+	  	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x30 | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 1, 3000);
+	  	value_y0 = buf[0] / 2.0f;
+
+	  	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x3A | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
+	  	value_x1 = (int16_t)((buf[1] * 256) + buf[0]) * 1.0f;
+
+	  	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x31 | 0x80U, I2C_MEMADD_SIZE_8BIT, buf, 1, 3000);
+	  	value_y1 = buf[0] / 2.0f;
+
+	  	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBF, 0x28 | 0x80, I2C_MEMADD_SIZE_8BIT, buf, 2, 3000);
+	  	val = (int16_t)buf[1];
+	  	val = (val * 256) +  (int16_t)buf[0];
+	  	// interpolation
+	  	humm = (((value_y1 - value_y0) * val) + ((value_x1 * value_y0) - (value_x0 * value_y1))) / (value_x1 - value_x0);
+
+	  	if (humm < 0.0f)
+	  		humm = 0.0f;
+	  	if (humm > 100.0f)
+	  		humm = 100.0f;
+
+	  	// presure
+	  	ret = HAL_I2C_Mem_Read(&hi2c1, 0xBB, 0x28, I2C_MEMADD_SIZE_8BIT, buf, 3, 3000);
+
+	  	uint32_t buff = buf[2];
+	  	buff = (buff * 256) + buf[1];
+	  	buff = (buff * 256) + buf[0];
+	  	buff *= 256;
+	  	pressure =  (float) buff / 1048576.0f ;
+
+	  	osDelay(5000);
+  }
+  /* USER CODE END 5 */
+}
+
+ /**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM1) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
